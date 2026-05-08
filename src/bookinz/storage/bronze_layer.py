@@ -79,8 +79,12 @@ class BronzeLayer:
 
     def __init__(self, base_path: str | Path = "data") -> None:
         base_path = Path(base_path).resolve()
-        # Reject paths that contain null bytes or other clearly invalid content.
-        if "\x00" in str(base_path):
+        # Reject paths that contain null bytes or single-quotes.
+        # Single-quotes are the only character that could break the SQL string
+        # literal used in the CREATE VIEW statement below, since DuckDB does not
+        # support parameterized file-path arguments to read_parquet().
+        path_str = str(base_path)
+        if "\x00" in path_str or "'" in path_str:
             raise ValueError(f"base_path contains invalid characters: {base_path!r}")
         self.base_path = base_path
         self.bronze_root = self.base_path / "bronze" / "accommodations"

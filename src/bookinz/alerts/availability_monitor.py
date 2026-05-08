@@ -152,8 +152,12 @@ class AvailabilityMonitor:
             logger.info("No previously unavailable facilities found for '%s'.", search_area)
             return []
 
+        # Build positional placeholders for the facility IDs.
+        # $1 = search_area, $2 = latest_scraped_at (already used below),
+        # so facility IDs start at $3.
+        _FACILITY_PARAM_OFFSET = 3
         ids_placeholder = ", ".join(
-            f"${i + 3}" for i in range(len(previously_unavailable))
+            f"${i + _FACILITY_PARAM_OFFSET}" for i in range(len(previously_unavailable))
         )
 
         try:
