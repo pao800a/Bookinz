@@ -12,6 +12,7 @@ from urllib.parse import urlencode
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
@@ -53,20 +54,13 @@ class AccommodationRecord:
 # HTTP helpers
 # ---------------------------------------------------------------------------
 
-_BASE_URL = "https://www.booking.com/searchresults.html"
+_BASE_URL     = "https://www.booking.com/searchresults.html"
+_HOMEPAGE_URL = "https://www.booking.com/"
 
+# Extra HTTP headers injected on every Playwright request.
 _DEFAULT_HEADERS = {
     "Accept-Language": "en-GB,en;q=0.9",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Connection": "keep-alive",
 }
-
-
-def _build_session() -> requests.Session:
-    session = requests.Session()
-    ua = UserAgent()
-    session.headers.update({**_DEFAULT_HEADERS, "User-Agent": ua.random})
-    return session
 
 
 # ---------------------------------------------------------------------------
@@ -245,7 +239,37 @@ class BookingComScraper:
         self.num_adults = num_adults
         self.max_pages = max_pages
         self.request_delay_s = request_delay_s
-        self._session = _build_session()
+
+        ua = UserAgent()
+        self._pw = sync_playwright().start()
+        self._browser = self._pw.chromium.launch(headless=True)
+        self._context = self._browser.new_context(
+            user_agent=ua.random,
+            locale="en-GB",
+            extra_http_headers=_DEFAULT_HEADERS,
+        )
+        self._page = self._context.new_page()
+        self._warm_up()
+
+    def _warm_up(self) -> None:
+        """Navigate to the booking.com homepage to acquire session cookies."""
+        logger.debug("Warming up browser session via homepage: %s", _HOMEPAGE_URL)
+        try:
+            self._page.goto(_HOMEPAGE_URL, wait_until="domcontentloaded", timeout=30_000)
+            cookies = [c["name"] for c in self._context.cookies()]
+            logger.debug("Homepage warm-up OK — cookies=%s", cookies)
+        except PlaywrightTimeout:
+            logger.warning("Homepage warm-up timed out (non-fatal).")
+        finally:
+            time.sleep(self.request_delay_s)
+
+    def __del__(self) -> None:
+        """Close the browser when the scraper is garbage-collected."""
+        try:
+            self._browser.close()
+            self._pw.stop()
+        except Exception:  # noqa: BLE001
+            pass
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -275,10 +299,21 @@ class BookingComScraper:
         reraise=True,
     )
     def _fetch_page(self, url: str) -> str:
-        logger.debug("GET %s", url)
-        response = self._session.get(url, timeout=15)
-        response.raise_for_status()
-        return response.text
+        logger.debug("Navigating to %s", url)
+        try:
+            response = self._page.goto(url, wait_until="networkidle", timeout=30_000)
+        except PlaywrightTimeout:
+            logger.warning("networkidle timeout — falling back to domcontentloaded")
+            response = self._page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+        status = response.status if response else 0
+        logger.debug(
+            "Response: status=%d, url=%s, size=%d bytes",
+            status,
+            self._page.url,
+            len(self._page.content()),
+        )
+        html = self._page.content()
+        return html
 
     @staticmethod
     def _extract_cards(html: str) -> list[BeautifulSoup]:
@@ -289,6 +324,18 @@ class BookingComScraper:
             # fallback to older markup
             cards = soup.find_all("div", {"data-hotelid": True})
         return cards
+
+    @staticmethod
+    def _log_no_cards_diagnostics(html: str) -> None:
+        """Log page title and a short HTML snippet to aid bot-detection diagnosis."""
+        soup = BeautifulSoup(html, "lxml")
+        title_tag = soup.find("title")
+        page_title = title_tag.get_text(strip=True) if title_tag else "(no <title> tag)"
+        logger.debug("Page title: %s", page_title)
+        # Log the first 1 500 chars of rendered text (strips tags) so the log
+        # file captures enough context without becoming unreadable.
+        body_text = soup.get_text(separator=" ", strip=True)[:1500]
+        logger.debug("Page text snippet: %s", body_text)
 
     # ------------------------------------------------------------------
     # Public API
@@ -323,6 +370,7 @@ class BookingComScraper:
             cards = self._extract_cards(html)
             if not cards:
                 logger.info("No property cards found on page %d — stopping.", page + 1)
+                self._log_no_cards_diagnostics(html)
                 break
 
             for card in cards:

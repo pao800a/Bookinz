@@ -1,0 +1,4 @@
+2026-05-08 15:18:08,763 [INFO] __main__: File logging initialised. Logs root: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\logs
+2026-05-08 15:18:08,763 [INFO] __main__: === Starting pipeline for area: Ponta Delgada, Portugal ===
+2026-05-08 15:18:11,190 [WARNING] __main__: No records returned for 'Ponta Delgada, Portugal'. Skipping bronze write.
+2026-05-08 15:18:11,190 [INFO] __main__: === Pipeline run complete (scraped_at=2026-05-08T13:18:08) ===

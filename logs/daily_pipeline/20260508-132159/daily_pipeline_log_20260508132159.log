@@ -1,0 +1,6 @@
+2026-05-08 15:21:59,292 [INFO] __main__: File logging initialised. Logs root: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\logs
+2026-05-08 15:21:59,292 [INFO] __main__: === Starting pipeline for area: Ponta Delgada, Portugal ===
+2026-05-08 15:23:13,139 [INFO] __main__: Scraped 250 records for 'Ponta Delgada, Portugal'.
+2026-05-08 15:23:13,235 [INFO] __main__: Bronze file: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\data\bronze\accommodations\search_area=Ponta_Delgada__Portugal\scrape_date=2026-05-08\run_2026-05-08T13-21-59.parquet
+2026-05-08 15:23:13,317 [INFO] __main__: No availability alerts for 'Ponta Delgada, Portugal'.
+2026-05-08 15:23:13,317 [INFO] __main__: === Pipeline run complete (scraped_at=2026-05-08T13:21:59) ===

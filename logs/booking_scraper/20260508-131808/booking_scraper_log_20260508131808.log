@@ -1,0 +1,9 @@
+2026-05-08 15:18:08,843 [DEBUG] bookinz.scraper.booking_scraper: Warming up session via homepage: https://www.booking.com/
+2026-05-08 15:18:09,521 [DEBUG] bookinz.scraper.booking_scraper: Homepage warm-up OK — status=202, cookies=['pcm_consent', 'bkng', 'bkng_sso_auth']
+2026-05-08 15:18:11,035 [INFO] bookinz.scraper.booking_scraper: Scraping page 1/10 for 'Ponta Delgada, Portugal' (offset=0)
+2026-05-08 15:18:11,035 [DEBUG] bookinz.scraper.booking_scraper: GET https://www.booking.com/searchresults.html?ss=Ponta+Delgada%2C+Portugal&checkin_year=2026&checkin_month=8&checkin_monthday=16&checkout_year=2026&checkout_month=8&checkout_monthday=22&group_adults=9&no_rooms=1&offset=0&lang=en-gb
+2026-05-08 15:18:11,187 [DEBUG] bookinz.scraper.booking_scraper: Response: status=202, final_url=https://www.booking.com/searchresults.html?ss=Ponta+Delgada%2C+Portugal&checkin_year=2026&checkin_month=8&checkin_monthday=16&checkout_year=2026&checkout_month=8&checkout_monthday=22&group_adults=9&no_rooms=1&offset=0&lang=en-gb, content_type=text/html, size=3962 bytes
+2026-05-08 15:18:11,187 [INFO] bookinz.scraper.booking_scraper: No property cards found on page 1 — stopping.
+2026-05-08 15:18:11,187 [DEBUG] bookinz.scraper.booking_scraper: Page title: 
+2026-05-08 15:18:11,190 [DEBUG] bookinz.scraper.booking_scraper: Page text snippet: JavaScript is disabled In order to continue, we need to verify that you're not a robot.
+        This requires JavaScript. Enable JavaScript and then reload the page.

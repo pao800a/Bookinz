@@ -43,6 +43,65 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# File-logging setup
+# ---------------------------------------------------------------------------
+
+def _setup_file_logging(logs_root: Path, run_ts: str) -> None:
+    """Attach a DEBUG-level FileHandler to every module logger for this run.
+
+    Each module gets its own log directory::
+
+        logs/<script_name>/<yyyyMMdd-HHmmss>/<script_name>_log_<yyyyMMddHHmmss>.log
+
+    Console output is left unchanged (INFO by default via basicConfig).
+
+    Parameters
+    ----------
+    logs_root:
+        Root directory for all log trees (e.g. ``<repo>/logs``).
+    run_ts:
+        Execution-start timestamp in ``yyyyMMdd-HHmmss`` format used as the
+        sub-directory name.
+    """
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    file_ts = run_ts.replace("-", "")  # yyyyMMddHHmmss for the filename
+
+    # (script_name, [logger names that write to that script's log file])
+    entries: list[tuple[str, list[str]]] = [
+        ("daily_pipeline",       ["bookinz.pipeline.daily_pipeline", "__main__"]),
+        ("booking_scraper",      ["bookinz.scraper.booking_scraper"]),
+        ("bronze_layer",         ["bookinz.storage.bronze_layer"]),
+        ("availability_monitor", ["bookinz.alerts.availability_monitor"]),
+    ]
+
+    # Clamp the root StreamHandler to INFO so that DEBUG records coming from
+    # module loggers (set to DEBUG below) don't bleed onto the console.
+    for h in logging.getLogger().handlers:
+        if isinstance(h, logging.StreamHandler) and h.level == logging.NOTSET:
+            h.setLevel(logging.INFO)
+
+    try:
+        for script_name, logger_names in entries:
+            log_dir = logs_root / script_name / run_ts
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_file = log_dir / f"{script_name}_log_{file_ts}.log"
+
+            handler = logging.FileHandler(log_file, encoding="utf-8")
+            handler.setLevel(logging.DEBUG)
+            handler.setFormatter(fmt)
+
+            for name in logger_names:
+                lg = logging.getLogger(name)
+                lg.setLevel(logging.DEBUG)  # allow DEBUG through to the file handler
+                lg.addHandler(handler)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[bookinz] WARNING: Could not initialise file logging: {exc}", flush=True)
+        return
+
+    logger.info("File logging initialised. Logs root: %s", logs_root)
+
+
+# ---------------------------------------------------------------------------
 # Core run function
 # ---------------------------------------------------------------------------
 
@@ -215,6 +274,11 @@ def main(argv: list[str] | None = None) -> None:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         stream=sys.stdout,
     )
+
+    run_ts = datetime.now(tz=timezone.utc).strftime("%Y%m%d-%H%M%S")
+    # Place logs/ next to the data/ directory (i.e. at the repo root).
+    logs_root = Path(args.data_path).resolve().parent / "logs"
+    _setup_file_logging(logs_root, run_ts)
 
     pipeline_kwargs = {
         "search_areas": args.areas,

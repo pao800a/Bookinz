@@ -18,6 +18,8 @@ dependencies = [
     "schedule>=1.2",
     "fake-useragent>=1.4",
     "tenacity>=8.2",
+    "cloudscraper>=1.2",
+    "playwright>=1.40",
 ]
 
 [project.optional-dependencies]

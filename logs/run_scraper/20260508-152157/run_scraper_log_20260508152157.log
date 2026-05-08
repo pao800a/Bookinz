@@ -1,0 +1,46 @@
+﻿**********************
+Inizio trascrizione Windows PowerShell
+Ora di inizio: 20260508152157
+Nome utente: PAO800A\gsppp
+Esegui come utente: PAO800A\gsppp
+Nome configurazione: 
+Computer PAO800A (Microsoft Windows NT 10.0.26200.0)
+Applicazione host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -noexit -command try { . "c:\Users\gsppp\AppData\Local\Programs\Microsoft VS Code\8b640eef5a\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+ID processo: 34912
+PSVersion: 5.1.26100.8328
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8328
+BuildVersion: 10.0.26100.8328
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[bookinz] Transcript started: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\logs\run_scraper\20260508-152157\run_scraper_log_20260508152157.log
+[bookinz] Activating virtual environment: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\.venv\Scripts\Activate.ps1
+[bookinz] Using Python: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\.venv\Scripts\python.exe
+[bookinz] Starting scrape - Location: 'Ponta Delgada, Portugal' | CheckIn: 2026-08-16 | CheckOut: 2026-08-22
+[bookinz] Data lake root : C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\data
+[bookinz] Guests: 9 | Max pages: 10 | Request delay: 1.5s
+
+ Portugal'.
+2026-05-08 15:23:13,234 [INFO] bookinz.storage.bronze_layer: Bronze write: 250 r
+ecords → C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\data\bronz
+e\accommodations\search_area=Ponta_Delgada__Portugal\scrape_date=2026-05-08\run_
+2026-05-08T13-21-59.parquet
+2026-05-08 15:23:13,235 [INFO] __main__: Bronze file: C:\Users\gsppp\OneDrive\De
+sktop\PAO800A_REPO\BOOKINZ\Bookinz\data\bronze\accommodations\search_area=Ponta_
+Delgada__Portugal\scrape_date=2026-05-08\run_2026-05-08T13-21-59.parquet
+2026-05-08 15:23:13,314 [INFO] bookinz.alerts.availability_monitor: No previousl
+y unavailable facilities found for 'Ponta Delgada, Portugal'.
+2026-05-08 15:23:13,317 [INFO] __main__: No availability alerts for 'Ponta Delga
+da, Portugal'.
+2026-05-08 15:23:13,317 [INFO] __main__: === Pipeline run complete (scraped_at=2
+026-05-08T13:21:59) ===
+
+[bookinz] Pipeline completed successfully.
+[bookinz] Transcript saved: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\logs\run_scraper\20260508-152157\run_scraper_log_20260508152157.log
+**********************
+Fine trascrizione Windows PowerShell
+Ora di fine: 20260508152313
+**********************

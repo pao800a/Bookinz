@@ -1,0 +1,45 @@
+﻿**********************
+Inizio trascrizione Windows PowerShell
+Ora di inizio: 20260508143458
+Nome utente: PAO800A\gsppp
+Esegui come utente: PAO800A\gsppp
+Nome configurazione: 
+Computer PAO800A (Microsoft Windows NT 10.0.26200.0)
+Applicazione host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -noexit -command try { . "c:\Users\gsppp\AppData\Local\Programs\Microsoft VS Code\8b640eef5a\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+ID processo: 39036
+PSVersion: 5.1.26100.8328
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8328
+BuildVersion: 10.0.26100.8328
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[bookinz] Transcript started: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\logs\run_scraper\20260508-143458\run_scraper_log_20260508143458.log
+[bookinz] Activating virtual environment: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\.venv\Scripts\Activate.ps1
+[bookinz] Using Python: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\.venv\Scripts\python.exe
+[bookinz] Starting scrape - Location: 'Ponta Delgada, Portugal' | CheckIn: 2026-08-16 | CheckOut: 2026-08-22
+[bookinz] Data lake root : C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\data
+[bookinz] Guests: 9 | Max pages: 10 | Request delay: 1.5s
+
+<frozen runpy>:128: RuntimeWarning: 'bookinz.pipeline.daily_pipeline' found in s
+ys.modules after import of package 'bookinz.pipeline', but prior to execution of
+ 'bookinz.pipeline.daily_pipeline'; this may result in unpredictable behaviour
+2026-05-08 14:34:59,332 [INFO] __main__: === Starting pipeline for area: Ponta D
+elgada, Portugal ===
+2026-05-08 14:34:59,365 [INFO] bookinz.scraper.booking_scraper: Scraping page 1/
+10 for 'Ponta Delgada, Portugal' (offset=0)
+2026-05-08 14:34:59,749 [INFO] bookinz.scraper.booking_scraper: No property card
+s found on page 1 — stopping.
+2026-05-08 14:34:59,749 [WARNING] __main__: No records returned for 'Ponta Delga
+da, Portugal'. Skipping bronze write.
+2026-05-08 14:34:59,749 [INFO] __main__: === Pipeline run complete (scraped_at=2
+026-05-08T12:34:59) ===
+
+[bookinz] Pipeline completed successfully.
+[bookinz] Transcript saved: C:\Users\gsppp\OneDrive\Desktop\PAO800A_REPO\BOOKINZ\Bookinz\logs\run_scraper\20260508-143458\run_scraper_log_20260508143458.log
+**********************
+Fine trascrizione Windows PowerShell
+Ora di fine: 20260508143459
+**********************
