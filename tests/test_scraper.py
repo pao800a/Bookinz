@@ -82,7 +82,8 @@ class TestParseCard:
 
     def test_url_is_absolute(self, card: BeautifulSoup) -> None:
         record = _parse_card(card, "Amsterdam", "2024-02-01", "2024-02-03", "2024-01-15T08:00:00")
-        assert record.url.startswith("https://") and "booking.com" in record.url
+        # Relative URL /hotel/nl/alpha.html should be converted to absolute.
+        assert record.url.startswith("https://") and record.url.endswith("/hotel/nl/alpha.html")
 
     def test_price(self, card: BeautifulSoup) -> None:
         record = _parse_card(card, "Amsterdam", "2024-02-01", "2024-02-03", "2024-01-15T08:00:00")

@@ -78,7 +78,11 @@ class BronzeLayer:
     """
 
     def __init__(self, base_path: str | Path = "data") -> None:
-        self.base_path = Path(base_path)
+        base_path = Path(base_path).resolve()
+        # Reject paths that contain null bytes or other clearly invalid content.
+        if "\x00" in str(base_path):
+            raise ValueError(f"base_path contains invalid characters: {base_path!r}")
+        self.base_path = base_path
         self.bronze_root = self.base_path / "bronze" / "accommodations"
         self.bronze_root.mkdir(parents=True, exist_ok=True)
 

@@ -54,7 +54,6 @@ class AccommodationRecord:
 # ---------------------------------------------------------------------------
 
 _BASE_URL = "https://www.booking.com/searchresults.html"
-_PROPERTY_URL = "https://www.booking.com/hotel/gb/{facility_id}.html"
 
 _DEFAULT_HEADERS = {
     "Accept-Language": "en-GB,en;q=0.9",

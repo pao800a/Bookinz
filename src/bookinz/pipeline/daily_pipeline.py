@@ -33,7 +33,7 @@ from pathlib import Path
 
 import requests
 import schedule
-import time as _time
+import time
 
 from bookinz.alerts.availability_monitor import AvailabilityMonitor
 from bookinz.scraper.booking_scraper import BookingComScraper
@@ -234,7 +234,7 @@ def main(argv: list[str] | None = None) -> None:
         schedule.every().day.at(args.schedule_time).do(run_pipeline, **pipeline_kwargs)
         while True:
             schedule.run_pending()
-            _time.sleep(30)
+            time.sleep(30)
 
 
 if __name__ == "__main__":

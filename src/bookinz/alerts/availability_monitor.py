@@ -123,8 +123,28 @@ class AvailabilityMonitor:
         latest_scraped_at = _validate_timestamp(latest_scraped_at)
 
         try:
-            previously_unavailable = self._get_previously_unavailable(search_area, latest_scraped_at)
-        except Exception as exc:  # noqa: BLE001 — DuckDB raises its own exception hierarchy
+            con = self.bronze.connection()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Could not open bronze connection: %s", exc)
+            return []
+
+        try:
+            return self._check_with_connection(con, search_area, latest_scraped_at)
+        finally:
+            con.close()
+
+    def _check_with_connection(
+        self,
+        con,  # duckdb.DuckDBPyConnection
+        search_area: str,
+        latest_scraped_at: str,
+    ) -> list[AvailabilityAlert]:
+        """Internal: run both queries on the already-open *con*."""
+        try:
+            previously_unavailable = self._get_previously_unavailable(
+                con, search_area, latest_scraped_at
+            )
+        except Exception as exc:  # noqa: BLE001
             logger.warning("Could not query historical availability: %s", exc)
             return []
 
@@ -132,10 +152,12 @@ class AvailabilityMonitor:
             logger.info("No previously unavailable facilities found for '%s'.", search_area)
             return []
 
-        ids_placeholder = ", ".join(f"'{fid}'" for fid in previously_unavailable)
+        ids_placeholder = ", ".join(
+            f"${i + 3}" for i in range(len(previously_unavailable))
+        )
 
         try:
-            now_available_df = self.bronze.query(
+            now_available_df = con.execute(
                 f"""
                 SELECT
                     facility_id,
@@ -147,12 +169,13 @@ class AvailabilityMonitor:
                     currency,
                     rating
                 FROM bronze
-                WHERE search_area = '{search_area}'
-                  AND scraped_at  = '{latest_scraped_at}'
+                WHERE search_area = $1
+                  AND scraped_at  = $2
                   AND is_available = true
                   AND facility_id IN ({ids_placeholder})
-                """
-            )
+                """,
+                [search_area, latest_scraped_at, *previously_unavailable.keys()],
+            ).df()
         except Exception as exc:  # noqa: BLE001
             logger.error("Error querying latest availability: %s", exc)
             return []
@@ -176,22 +199,25 @@ class AvailabilityMonitor:
 
         return alerts
 
+    @staticmethod
     def _get_previously_unavailable(
-        self, search_area: str, latest_scraped_at: str
+        con,  # duckdb.DuckDBPyConnection
+        search_area: str,
+        latest_scraped_at: str,
     ) -> dict[str, str]:
         """Return ``{facility_id: first_unavailable_date}`` for all facilities
         that have **never** been seen as available before the current run.
         """
-        df = self.bronze.query(
-            f"""
+        df = con.execute(
+            """
             WITH history AS (
                 SELECT
                     facility_id,
                     scrape_date,
                     MAX(CAST(is_available AS INTEGER)) AS ever_available
                 FROM bronze
-                WHERE search_area = '{search_area}'
-                  AND scraped_at  < '{latest_scraped_at}'
+                WHERE search_area = $1
+                  AND scraped_at  < $2
                 GROUP BY facility_id, scrape_date
             ),
             unavailable AS (
@@ -211,8 +237,9 @@ class AvailabilityMonitor:
             FROM unavailable u
             LEFT JOIN ever_available ea USING (facility_id)
             WHERE ea.facility_id IS NULL
-            """
-        )
+            """,
+            [search_area, latest_scraped_at],
+        ).df()
         if df.empty:
             return {}
         return dict(zip(df["facility_id"], df["first_unavailable_date"]))
