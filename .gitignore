@@ -16,10 +16,15 @@ venv/
 env/
 .env
 
+# ── Caches  ────────────────────────────────────────────────────────────────────
+.pytest_cache/
+__pycache__/
+
 # ── Data lake (never commit raw data) ─────────────────────────────────────────
 data/bronze/
 data/silver/
 data/gold/
+logs/
 
 # ── IDE / OS ───────────────────────────────────────────────────────────────────
 .idea/
@@ -31,3 +36,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# ── Jupyter Notebooks ──────────────────────────────────────────────────────────
+explore.ipynb

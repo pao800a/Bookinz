@@ -46,13 +46,17 @@ BRONZE_SCHEMA = pa.schema(
         pa.field("checkin_date", pa.string()),
         pa.field("checkout_date", pa.string()),
         pa.field("scraped_at", pa.string()),
-        pa.field("price_per_night", pa.float64()),
+        pa.field("num_adults", pa.int64()),
+        pa.field("total_price", pa.float64()),
         pa.field("currency", pa.string()),
         pa.field("rating", pa.float64()),
         pa.field("rating_category", pa.string()),
         pa.field("num_reviews", pa.int64()),
         pa.field("distance_from_center_km", pa.float64()),
         pa.field("num_rooms_available", pa.int64()),
+        pa.field("neighbourhood", pa.string()),
+        pa.field("accommodation_type", pa.string()),
+        pa.field("tags", pa.string()),
         pa.field("is_available", pa.bool_()),
         pa.field("raw_html_snippet", pa.string()),
     ]
@@ -216,7 +220,8 @@ class BronzeLayer:
         # Reorder to match schema
         df = df[expected_columns]
         # Type coercions
-        df["price_per_night"] = pd.to_numeric(df["price_per_night"], errors="coerce")
+        df["total_price"] = pd.to_numeric(df["total_price"], errors="coerce")
+        df["num_adults"] = pd.to_numeric(df["num_adults"], errors="coerce").astype("Int64")
         df["rating"] = pd.to_numeric(df["rating"], errors="coerce")
         df["num_reviews"] = pd.to_numeric(df["num_reviews"], errors="coerce").astype("Int64")
         df["num_rooms_available"] = pd.to_numeric(
@@ -226,6 +231,7 @@ class BronzeLayer:
         # String columns
         for col in ["facility_id", "name", "url", "search_area", "checkin_date",
                     "checkout_date", "scraped_at", "currency", "rating_category",
+                    "neighbourhood", "accommodation_type", "tags",
                     "raw_html_snippet"]:
             df[col] = df[col].astype(str).where(df[col].notna(), other=None)
         return df

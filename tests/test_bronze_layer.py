@@ -24,13 +24,17 @@ SAMPLE_RECORDS = [
         "checkin_date": "2024-02-01",
         "checkout_date": "2024-02-03",
         "scraped_at": "2024-01-15T08:00:00",
-        "price_per_night": 120.0,
+        "num_adults": 2,
+        "total_price": 120.0,
         "currency": "EUR",
         "rating": 8.5,
         "rating_category": "Fabulous",
         "num_reviews": 342,
         "distance_from_center_km": 1.2,
         "num_rooms_available": 3,
+        "neighbourhood": "City Centre",
+        "accommodation_type": "Entire apartment",
+        "tags": "New to Booking.com|Free WiFi",
         "is_available": True,
         "raw_html_snippet": "<div>Hotel Alpha</div>",
     },
@@ -42,13 +46,17 @@ SAMPLE_RECORDS = [
         "checkin_date": "2024-02-01",
         "checkout_date": "2024-02-03",
         "scraped_at": "2024-01-15T08:00:00",
-        "price_per_night": None,
+        "num_adults": 2,
+        "total_price": None,
         "currency": None,
         "rating": 7.2,
         "rating_category": "Good",
         "num_reviews": 80,
         "distance_from_center_km": 2.5,
         "num_rooms_available": None,
+        "neighbourhood": None,
+        "accommodation_type": "Hotel room",
+        "tags": None,
         "is_available": False,
         "raw_html_snippet": "<div>Hotel Beta</div>",
     },
@@ -138,8 +146,8 @@ class TestBronzeQuery:
 
     def test_query_price_column_type(self, bronze: BronzeLayer) -> None:
         bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
-        df = bronze.query("SELECT price_per_night FROM bronze WHERE price_per_night IS NOT NULL")
-        assert pd.api.types.is_float_dtype(df["price_per_night"])
+        df = bronze.query("SELECT total_price FROM bronze WHERE total_price IS NOT NULL")
+        assert pd.api.types.is_float_dtype(df["total_price"])
 
     def test_query_available_only(self, bronze: BronzeLayer) -> None:
         bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
