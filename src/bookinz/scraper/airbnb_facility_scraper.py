@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 _NEXT_DATA_SELECTOR = "script#__NEXT_DATA__"
 _PAGE_TIMEOUT_MS    = 60_000
-_CARD_TIMEOUT_MS    = 30_000
 _AIRBNB_HOME_URL    = "https://www.airbnb.com/"
 
 # AirBnB section IDs (Niobe framework, 2025+)
@@ -753,39 +752,30 @@ class AirbnbFacilityScraper:
         reraise=True,
     )
     def _fetch_page(self, url: str) -> str:
-        """Load *url* in the Playwright browser and return the page HTML."""
+        """Fetch *url* and return the raw server-rendered HTML.
+
+        Uses response interception: returns as soon as the HTTP response body
+        is received, without waiting for any JS execution.  The Niobe
+        ``data-deferred-state-0`` blob is server-side rendered, so the raw
+        response body is all we need.
+        """
         assert self._page is not None, "Use AirbnbFacilityScraper as a context manager."
         try:
-            self._page.goto(url, wait_until="domcontentloaded", timeout=_PAGE_TIMEOUT_MS)
-            # Wait specifically for __NEXT_DATA__ — other selectors like h1 exist on
-            # bot-detection pages too and would give a false positive.
-            try:
-                # Wait for the Niobe data blob (primary) or the legacy Next.js blob.
-                self._page.wait_for_selector(
-                    "script#data-deferred-state-0, script#__NEXT_DATA__",
-                    timeout=_CARD_TIMEOUT_MS,
-                )
-            except PlaywrightTimeout:
-                title = self._page.title()
-                current_url = self._page.url
-                logger.warning(
-                    "Page data not found on %s (title=%r, final_url=%r). "
-                    "Possible bot-detection or redirect.",
-                    url, title, current_url,
-                )
-            else:
-                pass  # selector confirmed present — no extra settle needed
+            with self._page.expect_response(
+                lambda r: r.request.resource_type == "document" and r.status == 200,
+                timeout=_PAGE_TIMEOUT_MS,
+            ) as resp_info:
+                self._page.goto(url, wait_until="commit", timeout=_PAGE_TIMEOUT_MS)
+            return resp_info.value.text()
         except PlaywrightTimeout as exc:
             logger.error("Page load timeout for %s: %s", url, exc)
             raise
-
-        return self._page.content()
 
     def _warm_up_session(self) -> None:
         """Visit the AirBnB homepage to acquire session cookies before scraping."""
         try:
             self._page.goto(_AIRBNB_HOME_URL, wait_until="domcontentloaded", timeout=_PAGE_TIMEOUT_MS)
-            time.sleep(3)
+            time.sleep(1)
             logger.debug("Session warmed up via %s.", _AIRBNB_HOME_URL)
         except PlaywrightTimeout:
             logger.warning("Timeout warming up session via homepage — listing pages may fail.")

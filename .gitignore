@@ -21,9 +21,7 @@ env/
 __pycache__/
 
 # ── Data lake (never commit raw data) ─────────────────────────────────────────
-data/bronze/
-data/silver/
-data/gold/
+data/
 logs/
 
 # ── IDE / OS ───────────────────────────────────────────────────────────────────
