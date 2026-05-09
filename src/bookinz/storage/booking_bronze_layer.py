@@ -72,7 +72,7 @@ def _sanitize_partition_value(value: str) -> str:
     return re.sub(r"[^\w\-.]", "_", value)
 
 
-class BronzeLayer:
+class BookingBronzeLayer:
     """Manages the bronze (raw) data layer.
 
     Parameters
@@ -160,7 +160,7 @@ class BronzeLayer:
         Example
         -------
         >>> bl = BronzeLayer("data")
-        >>> df = bl.query("SELECT * FROM bronze WHERE search_area = 'Amsterdam'")
+        >>> df = bl.query("SELECT * FROM booking_bronze WHERE search_area = 'Amsterdam'")
         """
         glob_pattern = str(self.bronze_root / "**" / "*.parquet")
         con = duckdb.connect()
@@ -178,7 +178,7 @@ class BronzeLayer:
         -------
         >>> bl = BronzeLayer("data")
         >>> con = bl.connection()
-        >>> con.execute("SELECT DISTINCT search_area FROM bronze").fetchall()
+        >>> con.execute("SELECT DISTINCT search_area FROM booking_bronze").fetchall()
         >>> con.close()
         """
         glob_pattern = str(self.bronze_root / "**" / "*.parquet")
@@ -231,7 +231,7 @@ class BronzeLayer:
 
         select_clause = ",\n        ".join(col_exprs)
         return (
-            "CREATE VIEW bronze AS\n"
+            "CREATE VIEW booking_bronze AS\n"
             f"    SELECT {select_clause}\n"
             f"    FROM read_parquet(\n"
             f"        '{glob_pattern}',\n"

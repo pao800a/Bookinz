@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from bookinz.storage.bronze_layer import BRONZE_SCHEMA, BronzeLayer
+from bookinz.storage.booking_bronze_layer import BRONZE_SCHEMA, BookingBronzeLayer
 
 
 # ---------------------------------------------------------------------------
@@ -69,8 +69,8 @@ def tmp_data_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def bronze(tmp_data_path: Path) -> BronzeLayer:
-    return BronzeLayer(tmp_data_path)
+def bronze(tmp_data_path: Path) -> BookingBronzeLayer:
+    return BookingBronzeLayer(tmp_data_path)
 
 
 # ---------------------------------------------------------------------------
@@ -78,26 +78,26 @@ def bronze(tmp_data_path: Path) -> BronzeLayer:
 # ---------------------------------------------------------------------------
 
 class TestBronzeWrite:
-    def test_write_creates_parquet_file(self, bronze: BronzeLayer) -> None:
+    def test_write_creates_parquet_file(self, bronze: BookingBronzeLayer) -> None:
         path = bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
         assert path.exists()
         assert path.suffix == ".parquet"
 
-    def test_write_partition_directory_structure(self, bronze: BronzeLayer) -> None:
+    def test_write_partition_directory_structure(self, bronze: BookingBronzeLayer) -> None:
         path = bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
         # Hive-style: search_area=Amsterdam/scrape_date=2024-01-15/
         assert "search_area=Amsterdam" in str(path)
         assert "scrape_date=2024-01-15" in str(path)
 
-    def test_write_file_name_contains_timestamp(self, bronze: BronzeLayer) -> None:
+    def test_write_file_name_contains_timestamp(self, bronze: BookingBronzeLayer) -> None:
         path = bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
         assert "run_" in path.name
 
-    def test_write_empty_records_raises(self, bronze: BronzeLayer) -> None:
+    def test_write_empty_records_raises(self, bronze: BookingBronzeLayer) -> None:
         with pytest.raises(ValueError):
             bronze.write([], "2024-01-15T08:00:00")
 
-    def test_write_schema_columns(self, bronze: BronzeLayer) -> None:
+    def test_write_schema_columns(self, bronze: BookingBronzeLayer) -> None:
         import pyarrow.parquet as pq
 
         path = bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
@@ -107,14 +107,14 @@ class TestBronzeWrite:
         expected_cols = {field.name for field in BRONZE_SCHEMA}
         assert expected_cols == set(table.schema.names)
 
-    def test_write_row_count(self, bronze: BronzeLayer) -> None:
+    def test_write_row_count(self, bronze: BookingBronzeLayer) -> None:
         import pyarrow.parquet as pq
 
         path = bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
         table = pq.ParquetFile(str(path)).read()
         assert table.num_rows == len(SAMPLE_RECORDS)
 
-    def test_write_sanitizes_special_chars_in_area(self, bronze: BronzeLayer) -> None:
+    def test_write_sanitizes_special_chars_in_area(self, bronze: BookingBronzeLayer) -> None:
         records = [{**r, "search_area": "New York/Manhattan"} for r in SAMPLE_RECORDS]
         path = bronze.write(records, "2024-01-15T08:00:00")
         # Directory name should not contain '/'
@@ -126,12 +126,12 @@ class TestBronzeWrite:
 # ---------------------------------------------------------------------------
 
 class TestBronzeQuery:
-    def test_query_returns_all_rows(self, bronze: BronzeLayer) -> None:
+    def test_query_returns_all_rows(self, bronze: BookingBronzeLayer) -> None:
         bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
-        df = bronze.query("SELECT * FROM bronze")
+        df = bronze.query("SELECT * FROM booking_bronze")
         assert len(df) == len(SAMPLE_RECORDS)
 
-    def test_query_filter_by_search_area(self, bronze: BronzeLayer) -> None:
+    def test_query_filter_by_search_area(self, bronze: BookingBronzeLayer) -> None:
         bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
         # Write a second area
         paris_records = [
@@ -140,34 +140,34 @@ class TestBronzeQuery:
         ]
         bronze.write(paris_records, "2024-01-15T08:00:00")
 
-        df = bronze.query("SELECT * FROM bronze WHERE search_area = 'Amsterdam'")
+        df = bronze.query("SELECT * FROM booking_bronze WHERE search_area = 'Amsterdam'")
         assert len(df) == len(SAMPLE_RECORDS)
         assert set(df["search_area"].unique()) == {"Amsterdam"}
 
-    def test_query_price_column_type(self, bronze: BronzeLayer) -> None:
+    def test_query_price_column_type(self, bronze: BookingBronzeLayer) -> None:
         bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
-        df = bronze.query("SELECT total_price FROM bronze WHERE total_price IS NOT NULL")
+        df = bronze.query("SELECT total_price FROM booking_bronze WHERE total_price IS NOT NULL")
         assert pd.api.types.is_float_dtype(df["total_price"])
 
-    def test_query_available_only(self, bronze: BronzeLayer) -> None:
+    def test_query_available_only(self, bronze: BookingBronzeLayer) -> None:
         bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
-        df = bronze.query("SELECT * FROM bronze WHERE is_available = true")
+        df = bronze.query("SELECT * FROM booking_bronze WHERE is_available = true")
         assert all(df["is_available"])
 
-    def test_connection_returns_open_connection(self, bronze: BronzeLayer) -> None:
+    def test_connection_returns_open_connection(self, bronze: BookingBronzeLayer) -> None:
         bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
         con = bronze.connection()
-        result = con.execute("SELECT COUNT(*) AS n FROM bronze").fetchone()
+        result = con.execute("SELECT COUNT(*) AS n FROM booking_bronze").fetchone()
         assert result[0] == len(SAMPLE_RECORDS)
         con.close()
 
-    def test_multiple_dates_queryable(self, bronze: BronzeLayer) -> None:
+    def test_multiple_dates_queryable(self, bronze: BookingBronzeLayer) -> None:
         bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
         day2 = [{**r, "scraped_at": "2024-01-16T08:00:00"} for r in SAMPLE_RECORDS]
         bronze.write(day2, "2024-01-16T08:00:00")
 
         df = bronze.query(
             "SELECT DISTINCT CAST(scrape_date AS VARCHAR) AS scrape_date "
-            "FROM bronze ORDER BY scrape_date"
+            "FROM booking_bronze ORDER BY scrape_date"
         )
         assert list(df["scrape_date"]) == ["2024-01-15", "2024-01-16"]

@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 from bookinz.alerts.availability_monitor import AvailabilityAlert, AvailabilityMonitor
-from bookinz.storage.bronze_layer import BronzeLayer
+from bookinz.storage.booking_bronze_layer import BookingBronzeLayer
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ def _make_record(
 
 class TestAvailabilityMonitor:
     def test_no_alerts_when_no_history(self, tmp_path: Path) -> None:
-        bronze = BronzeLayer(tmp_path / "data")
+        bronze = BookingBronzeLayer(tmp_path / "data")
         # Only one scrape — no prior unavailability
         records = [_make_record("h1", "2024-01-15T08:00:00", is_available=False)]
         bronze.write(records, "2024-01-15T08:00:00")
@@ -58,7 +58,7 @@ class TestAvailabilityMonitor:
         assert alerts == []
 
     def test_alert_fired_when_facility_recovers(self, tmp_path: Path) -> None:
-        bronze = BronzeLayer(tmp_path / "data")
+        bronze = BookingBronzeLayer(tmp_path / "data")
 
         # Day 1: hotel_001 is unavailable
         day1 = [_make_record("hotel_001", "2024-01-14T08:00:00", is_available=False)]
@@ -78,7 +78,7 @@ class TestAvailabilityMonitor:
         assert alert.recovered_at == "2024-01-15T08:00:00"
 
     def test_no_alert_when_facility_was_already_available(self, tmp_path: Path) -> None:
-        bronze = BronzeLayer(tmp_path / "data")
+        bronze = BookingBronzeLayer(tmp_path / "data")
 
         day1 = [_make_record("hotel_001", "2024-01-14T08:00:00", is_available=True)]
         bronze.write(day1, "2024-01-14T08:00:00")
@@ -91,7 +91,7 @@ class TestAvailabilityMonitor:
         assert alerts == []
 
     def test_no_alert_when_still_unavailable(self, tmp_path: Path) -> None:
-        bronze = BronzeLayer(tmp_path / "data")
+        bronze = BookingBronzeLayer(tmp_path / "data")
 
         day1 = [_make_record("hotel_001", "2024-01-14T08:00:00", is_available=False)]
         bronze.write(day1, "2024-01-14T08:00:00")
@@ -104,7 +104,7 @@ class TestAvailabilityMonitor:
         assert alerts == []
 
     def test_alert_str_representation(self, tmp_path: Path) -> None:
-        bronze = BronzeLayer(tmp_path / "data")
+        bronze = BookingBronzeLayer(tmp_path / "data")
         day1 = [_make_record("hotel_X", "2024-01-14T08:00:00", is_available=False)]
         bronze.write(day1, "2024-01-14T08:00:00")
         day2 = [_make_record("hotel_X", "2024-01-15T08:00:00", is_available=True)]
@@ -119,7 +119,7 @@ class TestAvailabilityMonitor:
         assert "Amsterdam" in text
 
     def test_error_in_query_returns_empty_list(self, tmp_path: Path) -> None:
-        bronze_mock = MagicMock(spec=BronzeLayer)
+        bronze_mock = MagicMock(spec=BookingBronzeLayer)
         bronze_mock.query.side_effect = RuntimeError("DB error")
 
         monitor = AvailabilityMonitor(bronze_mock)
@@ -127,13 +127,13 @@ class TestAvailabilityMonitor:
         assert alerts == []
 
     def test_invalid_search_area_raises(self, tmp_path: Path) -> None:
-        bronze = BronzeLayer(tmp_path / "data")
+        bronze = BookingBronzeLayer(tmp_path / "data")
         monitor = AvailabilityMonitor(bronze)
         with pytest.raises(ValueError, match="invalid characters"):
             monitor.check("'; DROP TABLE bronze; --", "2024-01-15T08:00:00")
 
     def test_invalid_timestamp_raises(self, tmp_path: Path) -> None:
-        bronze = BronzeLayer(tmp_path / "data")
+        bronze = BookingBronzeLayer(tmp_path / "data")
         monitor = AvailabilityMonitor(bronze)
         with pytest.raises(ValueError, match="YYYY-MM-DDTHH:MM:SS"):
             monitor.check("Amsterdam", "not-a-timestamp")

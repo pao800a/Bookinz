@@ -168,7 +168,7 @@ if (-not [System.IO.Path]::IsPathRooted($DataPath)) {
 # ---------------------------------------------------------------------------
 
 $PipelineArgs = @(
-    "-m", "bookinz.pipeline.daily_pipeline",
+    "-m", "bookinz.pipeline.booking_pipeline",
     "--area",       $Location,
     "--checkin",    $CheckIn,
     "--checkout",   $CheckOut,

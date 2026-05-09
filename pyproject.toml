@@ -20,6 +20,7 @@ dependencies = [
     "tenacity>=8.2",
     "cloudscraper>=1.2",
     "playwright>=1.40",
+    "geopy>=2.4",
 ]
 
 [project.optional-dependencies]
@@ -33,4 +34,7 @@ dev = [
 where = ["src"]
 
 [project.scripts]
-bookinz-run = "bookinz.pipeline.daily_pipeline:main"
+bookinz-run             = "bookinz.pipeline.booking_pipeline:main"
+airbnb-run              = "bookinz.pipeline.airbnb_pipeline:main"
+airbnb-facility-run     = "bookinz.pipeline.airbnb_facility_pipeline:main"
+airbnb-availability-run = "bookinz.pipeline.airbnb_availability_pipeline:main"

@@ -37,7 +37,7 @@ import time
 
 from bookinz.alerts.availability_monitor import AvailabilityMonitor
 from bookinz.scraper.booking_scraper import BookingComScraper
-from bookinz.storage.bronze_layer import BronzeLayer
+from bookinz.storage.booking_bronze_layer import BookingBronzeLayer
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +68,10 @@ def _setup_file_logging(logs_root: Path, run_ts: str) -> None:
 
     # (script_name, [logger names that write to that script's log file])
     entries: list[tuple[str, list[str]]] = [
-        ("daily_pipeline",       ["bookinz.pipeline.daily_pipeline", "__main__"]),
-        ("booking_scraper",      ["bookinz.scraper.booking_scraper"]),
-        ("bronze_layer",         ["bookinz.storage.bronze_layer"]),
-        ("availability_monitor", ["bookinz.alerts.availability_monitor"]),
+        ("booking_pipeline",      ["bookinz.pipeline.booking_pipeline", "__main__"]),
+        ("booking_scraper",       ["bookinz.scraper.booking_scraper"]),
+        ("booking_bronze_layer",  ["bookinz.storage.booking_bronze_layer"]),
+        ("availability_monitor",  ["bookinz.alerts.availability_monitor"]),
     ]
 
     # Clamp the root StreamHandler to INFO so that DEBUG records coming from
@@ -140,7 +140,7 @@ def run_pipeline(
         Polite delay (seconds) between HTTP requests.
     """
     scraped_at = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-    bronze = BronzeLayer(data_path)
+    bronze = BookingBronzeLayer(data_path)
 
     for area in search_areas:
         logger.info("=== Starting pipeline for area: %s ===", area)
