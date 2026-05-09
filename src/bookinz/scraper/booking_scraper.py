@@ -236,27 +236,37 @@ def _extract_neighbourhood(card: BeautifulSoup) -> str | None:
     """Returns the neighbourhood/area portion of the location element.
 
     Booking.com format: ``"Neighbourhood, City \u2022 X km from centre"``
-    Returns the part before the bullet separator.
+    Targets the inner text span to avoid SVG content from the pin icon,
+    then strips the distance suffix via regex.
     """
     loc_el = card.find(attrs={"data-testid": "location"})
     if not loc_el:
         return None
-    text = loc_el.get_text(strip=True)
-    if "\u2022" in text:  # bullet •
-        part = text.split("\u2022")[0].strip()
-        return part or None
-    return text or None
+    # Real HTML wraps the human-readable text in <span class="beb5ef4fb4">
+    inner = loc_el.find("span", class_="beb5ef4fb4")
+    text = (inner or loc_el).get_text(strip=True)
+    # Strip the "X km from centre" suffix and any preceding separator
+    m = re.match(r"^(.+?)\s*[\u2022\u00b7\u2027\-\|]\s*[\d.,]+\s*km", text, re.IGNORECASE)
+    if m:
+        return m.group(1).strip() or None
+    # Fallback: remove trailing km info if no separator found
+    stripped = re.sub(r"\s*[\d.,]+\s*km.*$", "", text, flags=re.IGNORECASE).strip()
+    return stripped or None
 
 
 def _extract_accommodation_type(card: BeautifulSoup) -> str | None:
     """Returns the accommodation type from the unit-configuration element.
 
     E.g. ``"Entire apartment \u2013 80 m\u00b2: 3 beds \u2026"`` → ``"Entire apartment"``.
+    Prefers the ``<b>`` child element (contains only the type + separator, no
+    sibling span noise), then falls back to full element text.
     """
     el = card.find(attrs={"data-testid": "unit-configuration"})
     if not el:
         return None
-    text = el.get_text(strip=True)
+    # Real HTML: <b>Entire apartment \u2013 80 m\u00b2: </b><span>3 beds</span>...
+    bold = el.find("b")
+    text = (bold or el).get_text(strip=True)
     # Split on en-dash, em-dash, or colon — whichever comes first
     for sep in ("\u2013", "\u2014", " - ", ":"):
         if sep in text:
@@ -291,6 +301,26 @@ def _extract_tags(card: BeautifulSoup) -> str | None:
             if text and text not in tags:
                 tags.append(text)
     return "|".join(tags) if tags else None
+
+
+def _extract_is_available(card: BeautifulSoup, price: float | None) -> bool:
+    """Returns True if the card represents a bookable, available property.
+
+    A card is considered unavailable when:
+    - No price is shown (``price is None``).
+    - The card text contains known unavailability signals from booking.com.
+    """
+    if price is None:
+        return False
+    card_text = card.get_text(separator=" ", strip=True).lower()
+    unavailability_phrases = (
+        "sold out",
+        "no availability",
+        "not available for your dates",
+        "see availability",
+        "unavailable",
+    )
+    return not any(phrase in card_text for phrase in unavailability_phrases)
 
 
 def _extract_distance(card: BeautifulSoup) -> float | None:
@@ -351,7 +381,7 @@ def _parse_card(
         neighbourhood=_extract_neighbourhood(card),
         accommodation_type=_extract_accommodation_type(card),
         tags=_extract_tags(card),
-        is_available=price is not None,
+        is_available=_extract_is_available(card, price),
         raw_html_snippet=str(card)[:8192],
     )
 

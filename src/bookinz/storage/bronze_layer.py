@@ -164,17 +164,7 @@ class BronzeLayer:
         """
         glob_pattern = str(self.bronze_root / "**" / "*.parquet")
         con = duckdb.connect()
-        con.execute(
-            f"""
-            CREATE VIEW bronze AS
-            SELECT *
-            FROM read_parquet(
-                '{glob_pattern}',
-                hive_partitioning = true,
-                filename = true
-            )
-            """
-        )
+        con.execute(self._build_view_sql(glob_pattern))
         result: pd.DataFrame = con.execute(sql).df()
         con.close()
         return result
@@ -193,18 +183,63 @@ class BronzeLayer:
         """
         glob_pattern = str(self.bronze_root / "**" / "*.parquet")
         con = duckdb.connect()
-        con.execute(
-            f"""
-            CREATE VIEW bronze AS
-            SELECT *
-            FROM read_parquet(
-                '{glob_pattern}',
-                hive_partitioning = true,
-                filename = true
-            )
-            """
-        )
+        con.execute(self._build_view_sql(glob_pattern))
         return con
+
+    @staticmethod
+    def _build_view_sql(glob_pattern: str) -> str:
+        """Return a CREATE VIEW statement that handles schema evolution.
+
+        Columns present in the Parquet files are projected directly.
+        Any column in :data:`BRONZE_SCHEMA` that is absent from the files
+        (e.g. added after those files were written) is projected as
+        ``NULL::TYPE``, so queries always see the full current schema.
+        ``union_by_name=true`` is passed to ``read_parquet`` so that files
+        written at different schema versions are merged correctly.
+        """
+        _TYPE_MAP: dict = {
+            pa.string(): "VARCHAR",
+            pa.float64(): "DOUBLE",
+            pa.int64(): "BIGINT",
+            pa.bool_(): "BOOLEAN",
+        }
+        try:
+            probe = duckdb.connect()
+            rows = probe.execute(
+                "SELECT column_name FROM ("
+                f"DESCRIBE SELECT * FROM read_parquet('{glob_pattern}', "
+                "hive_partitioning=true, union_by_name=true))"
+            ).fetchall()
+            probe.close()
+            actual = {r[0] for r in rows}
+        except Exception:  # no files yet or probe error
+            actual = set()
+
+        schema_names = {field.name for field in BRONZE_SCHEMA}
+        col_exprs = []
+        for field in BRONZE_SCHEMA:
+            if field.name in actual:
+                col_exprs.append(field.name)
+            else:
+                sql_type = _TYPE_MAP.get(field.type, "VARCHAR")
+                col_exprs.append(f"NULL::{sql_type} AS {field.name}")
+        # Also forward any extra columns from the files (e.g. hive partition
+        # columns like scrape_date, or the filename metadata column) that are
+        # not part of BRONZE_SCHEMA.
+        for col in sorted(actual - schema_names):
+            col_exprs.append(col)
+
+        select_clause = ",\n        ".join(col_exprs)
+        return (
+            "CREATE VIEW bronze AS\n"
+            f"    SELECT {select_clause}\n"
+            f"    FROM read_parquet(\n"
+            f"        '{glob_pattern}',\n"
+            f"        hive_partitioning = true,\n"
+            f"        filename = true,\n"
+            f"        union_by_name = true\n"
+            f"    )"
+        )
 
     # ------------------------------------------------------------------
     # Internal

@@ -89,9 +89,12 @@ CARD_HTML = textwrap.dedent(
           </div>
         </div>
       </div>
-      <div data-testid="location">City Centre &#x2022; 1.2 km from centre</div>
+      <div data-testid="location">
+        <span data-testid="icon-with-text-icon"></span>
+        <span class="beb5ef4fb4">City Centre &#x2022; 1.2 km from centre</span>
+      </div>
       <div data-testid="badges">New to Booking.com</div>
-      <div data-testid="unit-configuration">Entire apartment &#x2013; 80 m&#xb2;: 2 beds &#x2022; 1 bedroom</div>
+      <div data-testid="unit-configuration"><b>Entire apartment &#x2013; 80 m&#xb2;: </b><span>2 beds</span> &#x2022; <span>1 bedroom</span></div>
       <div>
         <span data-testid="icon-with-text-icon"></span><span>Free WiFi</span>
       </div>
@@ -174,6 +177,34 @@ class TestParseCard:
         record = _parse_card(card, "Amsterdam", "2024-02-01", "2024-02-03", "2024-01-15T08:00:00", num_adults=2)
         assert record.tags is not None
         assert "Free WiFi" in record.tags
+
+    def test_is_not_available_when_no_price(self) -> None:
+        html = textwrap.dedent("""
+            <div data-testid="property-card" data-hotelid="99999">
+              <a data-testid="title-link" href="/hotel/nl/unavail.html">
+                <span data-testid="title">No Price Hotel</span>
+              </a>
+              <div data-testid="location"><span class="beb5ef4fb4">Centre &#x2022; 0.5 km from centre</span></div>
+            </div>
+        """)
+        card = BeautifulSoup(html, "lxml").find("div", {"data-testid": "property-card"})
+        record = _parse_card(card, "Amsterdam", "2024-02-01", "2024-02-03", "2024-01-15T08:00:00", num_adults=2)
+        assert record.is_available is False
+
+    def test_is_not_available_when_sold_out(self) -> None:
+        html = textwrap.dedent("""
+            <div data-testid="property-card" data-hotelid="88888">
+              <a data-testid="title-link" href="/hotel/nl/soldout.html">
+                <span data-testid="title">Sold Out Hotel</span>
+              </a>
+              <span data-testid="price-and-discounted-price">&euro;&nbsp;200</span>
+              <div data-testid="location"><span class="beb5ef4fb4">Centre &#x2022; 1.0 km from centre</span></div>
+              <span>Sold out</span>
+            </div>
+        """)
+        card = BeautifulSoup(html, "lxml").find("div", {"data-testid": "property-card"})
+        record = _parse_card(card, "Amsterdam", "2024-02-01", "2024-02-03", "2024-01-15T08:00:00", num_adults=2)
+        assert record.is_available is False
 
 
 # ---------------------------------------------------------------------------
