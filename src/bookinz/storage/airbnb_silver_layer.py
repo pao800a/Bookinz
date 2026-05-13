@@ -45,6 +45,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from bookinz.storage.airbnb_accommodation_bronze_layer import AirbnbAccommodationBronzeLayer
+from bookinz.storage.airbnb_facility_bronze_layer import AirbnbFacilityBronzeLayer
 from bookinz.storage.booking_silver_layer import SILVER_SCHEMA
 
 logger = logging.getLogger(__name__)
@@ -185,7 +186,8 @@ class AirbnbSilverLayer:
         self.base_path   = base_path
         self.silver_root = self.base_path / "silver" / "airbnb" / "accommodations"
         self.silver_root.mkdir(parents=True, exist_ok=True)
-        self._bronze = AirbnbAccommodationBronzeLayer(base_path)
+        self._bronze   = AirbnbAccommodationBronzeLayer(base_path)
+        self._facility = AirbnbFacilityBronzeLayer(base_path)
 
     # ------------------------------------------------------------------
     # Push
@@ -210,8 +212,40 @@ class AirbnbSilverLayer:
         ts  = timestamp or datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
         sql = _SQL_FILE.read_text(encoding="utf-8")
 
+        # Open bronze connection and also register the facility view on it
         con: duckdb.DuckDBPyConnection = self._bronze.connection()
         try:
+            facility_glob = str(self._facility.bronze_root / "**" / "*.parquet")
+            facility_sql  = self._facility._build_view_sql(facility_glob)
+            con.execute(facility_sql)
+
+            # Geocode all unique (city, country) pairs from the accommodation bronze
+            city_rows = con.execute(
+                "SELECT DISTINCT "
+                "split_part(search_area, '__', 1) AS city, "
+                "split_part(search_area, '__', 2) AS country "
+                "FROM airbnb_accommodation_bronze"
+            ).fetchall()
+
+            city_centre_rows: list[tuple[str, str, float | None, float | None]] = []
+            first = True
+            for city, country in city_rows:
+                if not first:
+                    time.sleep(geocode_delay_s)
+                first = False
+                coords = _geocode_city_centre(str(city), str(country))
+                lat = coords[0] if coords else None
+                lon = coords[1] if coords else None
+                city_centre_rows.append((str(city), str(country), lat, lon))
+                logger.debug("Geocoded '%s, %s' → %s", city, country, coords)
+
+            # Inject city centres as an in-memory DuckDB table so the SQL can JOIN it
+            centres_df = pd.DataFrame(
+                city_centre_rows,
+                columns=["city", "country", "centre_lat", "centre_lon"],
+            )
+            con.register("city_centres", centres_df)
+
             table = con.execute(sql).fetch_arrow_table()
         finally:
             con.close()
@@ -220,10 +254,7 @@ class AirbnbSilverLayer:
             logger.warning("AirBnB silver push: query returned 0 rows — nothing written.")
             raise ValueError("AirBnB silver query returned no rows; bronze layer may be empty.")
 
-        # Compute distance_from_center_km and drop lat/lon (bronze-only columns)
-        table = _compute_distances(table, geocode_delay_s=geocode_delay_s)
-
-        # Align to shared silver schema
+        # Align to shared silver schema (no post-SQL geocoding needed — distance computed in SQL)
         table = _coerce_airbnb_silver_table(table)
 
         out_path = self.silver_root / f"silver_{ts}.parquet"
