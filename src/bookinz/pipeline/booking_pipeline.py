@@ -37,7 +37,7 @@ import time
 
 from bookinz.alerts.availability_monitor import AvailabilityMonitor
 from bookinz.scraper.booking_scraper import BookingComScraper
-from bookinz.storage.booking_bronze_layer import BookingBronzeLayer
+from bookinz.storage.booking_accommodation_bronze_layer import BookingAccommodationBronzeLayer
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ def _setup_file_logging(logs_root: Path, run_ts: str) -> None:
     entries: list[tuple[str, list[str]]] = [
         ("booking_pipeline",      ["bookinz.pipeline.booking_pipeline", "__main__"]),
         ("booking_scraper",       ["bookinz.scraper.booking_scraper"]),
-        ("booking_bronze_layer",  ["bookinz.storage.booking_bronze_layer"]),
+        ("booking_accommodation_bronze_layer",  ["bookinz.storage.booking_accommodation_bronze_layer"]),
         ("availability_monitor",  ["bookinz.alerts.availability_monitor"]),
     ]
 
@@ -140,7 +140,7 @@ def run_pipeline(
         Polite delay (seconds) between HTTP requests.
     """
     scraped_at = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-    bronze = BookingBronzeLayer(data_path)
+    bronze = BookingAccommodationBronzeLayer(data_path)
 
     for area in search_areas:
         logger.info("=== Starting pipeline for area: %s ===", area)

@@ -10,9 +10,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from bookinz.storage.data_lake import DataLake
-from bookinz.storage.airbnb_bronze_layer import AirbnbBronzeLayer, AIRBNB_BRONZE_SCHEMA
+from bookinz.storage.airbnb_accommodation_bronze_layer import AirbnbAccommodationBronzeLayer, AIRBNB_ACCOMMODATION_BRONZE_SCHEMA
 from bookinz.storage.airbnb_facility_bronze_layer import AirbnbFacilityBronzeLayer, AIRBNB_FACILITY_BRONZE_SCHEMA
-from bookinz.storage.booking_bronze_layer import BookingBronzeLayer, BRONZE_SCHEMA
+from bookinz.storage.booking_accommodation_bronze_layer import BookingAccommodationBronzeLayer, BOOKING_ACCOMMODATION_BRONZE_SCHEMA
 
 
 # ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ def lake_path(tmp_path: Path) -> Path:
 @pytest.fixture
 def lake_with_airbnb(lake_path: Path) -> DataLake:
     """DataLake with AirBnB accommodations bronze data written."""
-    abl = AirbnbBronzeLayer(lake_path)
+    abl = AirbnbAccommodationBronzeLayer(lake_path)
     abl.write(_AIRBNB_RECORDS, "2026-05-01T10:00:00")
     return DataLake(lake_path)
 
@@ -96,7 +96,7 @@ def lake_with_airbnb(lake_path: Path) -> DataLake:
 @pytest.fixture
 def lake_with_booking(lake_path: Path) -> DataLake:
     """DataLake with Booking.com accommodations bronze data written."""
-    bbl = BookingBronzeLayer(lake_path)
+    bbl = BookingAccommodationBronzeLayer(lake_path)
     bbl.write(_BOOKING_RECORDS, "2026-05-01T10:00:00")
     return DataLake(lake_path)
 
@@ -169,9 +169,9 @@ class TestDataLakeQuery:
 
     def test_multiple_datasets_in_same_connection(self, lake_path: Path) -> None:
         """Both airbnb and booking data are accessible in the same connection."""
-        abl = AirbnbBronzeLayer(lake_path)
+        abl = AirbnbAccommodationBronzeLayer(lake_path)
         abl.write(_AIRBNB_RECORDS, "2026-05-01T10:00:00")
-        bbl = BookingBronzeLayer(lake_path)
+        bbl = BookingAccommodationBronzeLayer(lake_path)
         bbl.write(_BOOKING_RECORDS, "2026-05-01T10:00:00")
 
         lake = DataLake(lake_path)

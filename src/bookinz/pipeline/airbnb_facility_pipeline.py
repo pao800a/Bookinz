@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from bookinz.scraper.airbnb_facility_scraper import AirbnbFacilityScraper
-from bookinz.storage.airbnb_bronze_layer import AirbnbBronzeLayer
+from bookinz.storage.airbnb_accommodation_bronze_layer import AirbnbAccommodationBronzeLayer
 from bookinz.storage.airbnb_facility_bronze_layer import AirbnbFacilityBronzeLayer
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ def _discover_listings(
     If *facility_ids* is provided, only those IDs are returned.
     """
     try:
-        abl = AirbnbBronzeLayer(data_path)
+        abl = AirbnbAccommodationBronzeLayer(data_path)
         sql = (
             "SELECT DISTINCT facility_id, url "
             "FROM airbnb_bronze "

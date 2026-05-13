@@ -32,7 +32,7 @@ from pathlib import Path
 import requests
 
 from bookinz.scraper.airbnb_scraper import AirbnbScraper
-from bookinz.storage.airbnb_bronze_layer import AirbnbBronzeLayer
+from bookinz.storage.airbnb_accommodation_bronze_layer import AirbnbAccommodationBronzeLayer
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def _setup_file_logging(logs_root: Path, run_ts: str) -> None:
     entries: list[tuple[str, list[str]]] = [
         ("airbnb_pipeline",    ["bookinz.pipeline.airbnb_pipeline", "__main__"]),
         ("airbnb_scraper",     ["bookinz.scraper.airbnb_scraper"]),
-        ("airbnb_bronze_layer",["bookinz.storage.airbnb_bronze_layer"]),
+        ("airbnb_accommodation_bronze_layer",["bookinz.storage.airbnb_accommodation_bronze_layer"]),
     ]
 
     for h in logging.getLogger().handlers:
@@ -120,7 +120,7 @@ def run_pipeline(
         Polite delay (seconds) between HTTP requests.
     """
     scraped_at = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-    bronze     = AirbnbBronzeLayer(data_path)
+    bronze     = AirbnbAccommodationBronzeLayer(data_path)
 
     for area in search_areas:
         logger.info("=== Starting AirBnB pipeline for area: %s ===", area)

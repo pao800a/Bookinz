@@ -23,7 +23,7 @@ import logging
 import re
 from dataclasses import dataclass
 
-from bookinz.storage.booking_bronze_layer import BookingBronzeLayer
+from bookinz.storage.booking_accommodation_bronze_layer import BookingAccommodationBronzeLayer
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ class AvailabilityMonitor:
         An initialised :class:`~bookinz.storage.bronze_layer.BronzeLayer`.
     """
 
-    def __init__(self, bronze_layer: BookingBronzeLayer) -> None:
+    def __init__(self, bronze_layer: BookingAccommodationBronzeLayer) -> None:
         self.bronze = bronze_layer
 
     def check(self, search_area: str, latest_scraped_at: str) -> list[AvailabilityAlert]:
@@ -172,7 +172,7 @@ class AvailabilityMonitor:
                     price_per_night,
                     currency,
                     rating
-                FROM booking_bronze
+                FROM booking_accommodation_bronze
                 WHERE search_area = $1
                   AND scraped_at  = $2
                   AND is_available = true
@@ -219,7 +219,7 @@ class AvailabilityMonitor:
                     facility_id,
                     scrape_date,
                     MAX(CAST(is_available AS INTEGER)) AS ever_available
-                FROM booking_bronze
+                FROM booking_accommodation_bronze
                 WHERE search_area = $1
                   AND scraped_at  < $2
                 GROUP BY facility_id, scrape_date

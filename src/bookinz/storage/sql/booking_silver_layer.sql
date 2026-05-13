@@ -44,7 +44,7 @@ data_enriched as (
                 checkout_date
             ORDER BY scrape_date DESC
         ) AS rn
-    from booking_bronze
+    from booking_accommodation_bronze
 ),
 dedup_data as (
     select

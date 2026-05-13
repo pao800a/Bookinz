@@ -35,7 +35,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from bookinz.storage.booking_bronze_layer import BookingBronzeLayer
+from bookinz.storage.booking_accommodation_bronze_layer import BookingAccommodationBronzeLayer
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class BookingSilverLayer:
         self.base_path = base_path
         self.silver_root = self.base_path / "silver" / "booking" / "accommodations"
         self.silver_root.mkdir(parents=True, exist_ok=True)
-        self._bronze = BookingBronzeLayer(base_path)
+        self._bronze = BookingAccommodationBronzeLayer(base_path)
 
     # ------------------------------------------------------------------
     # Push

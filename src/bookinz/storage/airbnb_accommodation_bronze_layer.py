@@ -10,8 +10,8 @@ Directory layout::
                 └── scrape_date=2026-09-20/
                     └── run_<scraped_at_ts>.parquet
 
-The view registered by :meth:`AirbnbBronzeLayer.connection` is named
-``airbnb_bronze`` (not ``bronze``) to allow both layers to coexist in the
+The view registered by :meth:`AirbnbAccommodationBronzeLayer.connection` is named
+``airbnb_accommodation_bronze`` to allow both layers to coexist in the
 same DuckDB session.
 """
 
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # Schema
 # ---------------------------------------------------------------------------
 
-AIRBNB_BRONZE_SCHEMA = pa.schema(
+AIRBNB_ACCOMMODATION_BRONZE_SCHEMA = pa.schema(
     [
         pa.field("facility_id",          pa.string()),
         pa.field("name",                 pa.string()),
@@ -74,14 +74,14 @@ def _sanitize_partition_value(value: str) -> str:
     return re.sub(r"[^\w\-.]", "_", value)
 
 
-class AirbnbBronzeLayer:
+class AirbnbAccommodationBronzeLayer:
     """Manages the AirBnB bronze (raw) data layer.
 
     Parameters
     ----------
     base_path:
         Root of the data lake (e.g. ``Path("data")``).
-        AirBnB data is stored under ``<base_path>/airbnb/bronze/accommodations/``.
+        AirBnB accommodation data is stored under ``<base_path>/bronze/airbnb/accommodations/``.
     """
 
     def __init__(self, base_path: str | Path = "data") -> None:
@@ -134,7 +134,7 @@ class AirbnbBronzeLayer:
         ts_safe    = scraped_at.replace(":", "-")
         file_path  = partition_dir / f"run_{ts_safe}.parquet"
 
-        table = pa.Table.from_pandas(df, schema=AIRBNB_BRONZE_SCHEMA, preserve_index=False)
+        table = pa.Table.from_pandas(df, schema=AIRBNB_ACCOMMODATION_BRONZE_SCHEMA, preserve_index=False)
         pq.write_table(table, file_path, compression="snappy")
 
         logger.info("AirBnB bronze write: %d records → %s", len(records), file_path)
@@ -145,7 +145,7 @@ class AirbnbBronzeLayer:
     # ------------------------------------------------------------------
 
     def connection(self) -> duckdb.DuckDBPyConnection:
-        """Return an open DuckDB connection with ``airbnb_bronze`` view pre-registered.
+        """Return an open DuckDB connection with ``airbnb_accommodation_bronze`` view pre-registered.
 
         The caller is responsible for closing the connection.
         """
@@ -156,7 +156,7 @@ class AirbnbBronzeLayer:
 
     @staticmethod
     def _build_view_sql(glob_pattern: str) -> str:
-        """Return a ``CREATE VIEW airbnb_bronze`` statement with schema-evolution support.
+        """Return a ``CREATE VIEW airbnb_accommodation_bronze`` statement with schema-evolution support.
 
         Absent columns (added after older files were written) are projected as
         ``NULL::<TYPE>`` so queries always see the full current schema.
@@ -179,9 +179,9 @@ class AirbnbBronzeLayer:
         except Exception:
             actual = set()
 
-        schema_names = {field.name for field in AIRBNB_BRONZE_SCHEMA}
+        schema_names = {field.name for field in AIRBNB_ACCOMMODATION_BRONZE_SCHEMA}
         col_exprs    = []
-        for fld in AIRBNB_BRONZE_SCHEMA:
+        for fld in AIRBNB_ACCOMMODATION_BRONZE_SCHEMA:
             if fld.name in actual:
                 col_exprs.append(fld.name)
             else:
@@ -192,7 +192,7 @@ class AirbnbBronzeLayer:
 
         select_clause = ",\n        ".join(col_exprs)
         return (
-            "CREATE VIEW airbnb_bronze AS\n"
+            "CREATE VIEW airbnb_accommodation_bronze AS\n"
             f"    SELECT {select_clause}\n"
             f"    FROM read_parquet(\n"
             f"        '{glob_pattern}',\n"
@@ -209,7 +209,7 @@ class AirbnbBronzeLayer:
     @staticmethod
     def _coerce_schema(df: pd.DataFrame) -> pd.DataFrame:
         """Cast DataFrame columns to expected types, adding missing columns as None."""
-        expected = [fld.name for fld in AIRBNB_BRONZE_SCHEMA]
+        expected = [fld.name for fld in AIRBNB_ACCOMMODATION_BRONZE_SCHEMA]
         for col in expected:
             if col not in df.columns:
                 df[col] = None

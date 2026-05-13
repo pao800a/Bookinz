@@ -44,7 +44,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from bookinz.storage.airbnb_bronze_layer import AirbnbBronzeLayer
+from bookinz.storage.airbnb_accommodation_bronze_layer import AirbnbAccommodationBronzeLayer
 from bookinz.storage.booking_silver_layer import SILVER_SCHEMA
 
 logger = logging.getLogger(__name__)
@@ -185,7 +185,7 @@ class AirbnbSilverLayer:
         self.base_path   = base_path
         self.silver_root = self.base_path / "silver" / "airbnb" / "accommodations"
         self.silver_root.mkdir(parents=True, exist_ok=True)
-        self._bronze = AirbnbBronzeLayer(base_path)
+        self._bronze = AirbnbAccommodationBronzeLayer(base_path)
 
     # ------------------------------------------------------------------
     # Push

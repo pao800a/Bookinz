@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from bookinz.scraper.airbnb_availability_scraper import AirbnbAvailabilityScraper
-from bookinz.storage.airbnb_bronze_layer import AirbnbBronzeLayer
+from bookinz.storage.airbnb_accommodation_bronze_layer import AirbnbAccommodationBronzeLayer
 from bookinz.storage.airbnb_availability_bronze_layer import AirbnbAvailabilityBronzeLayer
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ def _discover_facility_ids(
         return list(dict.fromkeys(facility_ids))  # preserve order, dedup
 
     try:
-        abl = AirbnbBronzeLayer(data_path)
+        abl = AirbnbAccommodationBronzeLayer(data_path)
         df  = abl.query(
             "SELECT DISTINCT facility_id FROM airbnb_bronze "
             "WHERE facility_id IS NOT NULL"

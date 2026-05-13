@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 # Schema
 # ---------------------------------------------------------------------------
 
-BRONZE_SCHEMA = pa.schema(
+BOOKING_ACCOMMODATION_BRONZE_SCHEMA = pa.schema(
     [
         pa.field("facility_id", pa.string()),
         pa.field("name", pa.string()),
@@ -72,7 +72,7 @@ def _sanitize_partition_value(value: str) -> str:
     return re.sub(r"[^\w\-.]", "_", value)
 
 
-class BookingBronzeLayer:
+class BookingAccommodationBronzeLayer:
     """Manages the bronze (raw) data layer.
 
     Parameters
@@ -137,7 +137,7 @@ class BookingBronzeLayer:
         ts_safe = scraped_at.replace(":", "-")
         file_path = partition_dir / f"run_{ts_safe}.parquet"
 
-        table = pa.Table.from_pandas(df, schema=BRONZE_SCHEMA, preserve_index=False)
+        table = pa.Table.from_pandas(df, schema=BOOKING_ACCOMMODATION_BRONZE_SCHEMA, preserve_index=False)
         pq.write_table(table, file_path, compression="snappy")
 
         logger.info(
@@ -160,7 +160,7 @@ class BookingBronzeLayer:
         -------
         >>> bl = BronzeLayer("data")
         >>> con = bl.connection()
-        >>> con.execute("SELECT DISTINCT search_area FROM booking_bronze").fetchall()
+        >>> con.execute("SELECT DISTINCT search_area FROM booking_accommodation_bronze").fetchall()
         >>> con.close()
         """
         glob_pattern = str(self.bronze_root / "**" / "*.parquet")
@@ -173,7 +173,7 @@ class BookingBronzeLayer:
         """Return a CREATE VIEW statement that handles schema evolution.
 
         Columns present in the Parquet files are projected directly.
-        Any column in :data:`BRONZE_SCHEMA` that is absent from the files
+        Any column in :data:`BOOKING_ACCOMMODATION_BRONZE_SCHEMA` that is absent from the files
         (e.g. added after those files were written) is projected as
         ``NULL::TYPE``, so queries always see the full current schema.
         ``union_by_name=true`` is passed to ``read_parquet`` so that files
@@ -197,9 +197,9 @@ class BookingBronzeLayer:
         except Exception:  # no files yet or probe error
             actual = set()
 
-        schema_names = {field.name for field in BRONZE_SCHEMA}
+        schema_names = {field.name for field in BOOKING_ACCOMMODATION_BRONZE_SCHEMA}
         col_exprs = []
-        for field in BRONZE_SCHEMA:
+        for field in BOOKING_ACCOMMODATION_BRONZE_SCHEMA:
             if field.name in actual:
                 col_exprs.append(field.name)
             else:
@@ -207,13 +207,13 @@ class BookingBronzeLayer:
                 col_exprs.append(f"NULL::{sql_type} AS {field.name}")
         # Also forward any extra columns from the files (e.g. hive partition
         # columns like scrape_date, or the filename metadata column) that are
-        # not part of BRONZE_SCHEMA.
+        # not part of BOOKING_ACCOMMODATION_BRONZE_SCHEMA.
         for col in sorted(actual - schema_names):
             col_exprs.append(col)
 
         select_clause = ",\n        ".join(col_exprs)
         return (
-            "CREATE VIEW booking_bronze AS\n"
+            "CREATE VIEW booking_accommodation_bronze AS\n"
             f"    SELECT {select_clause}\n"
             f"    FROM read_parquet(\n"
             f"        '{glob_pattern}',\n"
@@ -230,7 +230,7 @@ class BookingBronzeLayer:
     @staticmethod
     def _coerce_schema(df: pd.DataFrame) -> pd.DataFrame:
         """Cast DataFrame columns to the expected types, adding missing columns."""
-        expected_columns = [field.name for field in BRONZE_SCHEMA]
+        expected_columns = [field.name for field in BOOKING_ACCOMMODATION_BRONZE_SCHEMA]
         for col in expected_columns:
             if col not in df.columns:
                 df[col] = None
