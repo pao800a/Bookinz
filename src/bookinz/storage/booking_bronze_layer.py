@@ -91,7 +91,7 @@ class BookingBronzeLayer:
         if "\x00" in path_str or "'" in path_str:
             raise ValueError(f"base_path contains invalid characters: {base_path!r}")
         self.base_path = base_path
-        self.bronze_root = self.base_path / "bronze" / "accommodations"
+        self.bronze_root = self.base_path / "bronze" / "booking" / "accommodations"
         self.bronze_root.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
@@ -150,24 +150,6 @@ class BookingBronzeLayer:
     # ------------------------------------------------------------------
     # Query helpers
     # ------------------------------------------------------------------
-
-    def query(self, sql: str) -> pd.DataFrame:
-        """Execute *sql* against the bronze layer with DuckDB and return a DataFrame.
-
-        The table name ``bronze`` is pre-registered and maps to all Parquet
-        files under :attr:`bronze_root` with hive-style partition discovery.
-
-        Example
-        -------
-        >>> bl = BronzeLayer("data")
-        >>> df = bl.query("SELECT * FROM booking_bronze WHERE search_area = 'Amsterdam'")
-        """
-        glob_pattern = str(self.bronze_root / "**" / "*.parquet")
-        con = duckdb.connect()
-        con.execute(self._build_view_sql(glob_pattern))
-        result: pd.DataFrame = con.execute(sql).df()
-        con.close()
-        return result
 
     def connection(self) -> duckdb.DuckDBPyConnection:
         """Return an open DuckDB connection with the ``bronze`` view pre-registered.

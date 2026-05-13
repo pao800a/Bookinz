@@ -6,6 +6,7 @@ from bookinz.storage.airbnb_bronze_layer import AIRBNB_BRONZE_SCHEMA, AirbnbBron
 from bookinz.storage.airbnb_silver_layer import AIRBNB_SILVER_SCHEMA, AirbnbSilverLayer
 from bookinz.storage.airbnb_facility_bronze_layer import AIRBNB_FACILITY_BRONZE_SCHEMA, AirbnbFacilityBronzeLayer
 from bookinz.storage.airbnb_availability_bronze_layer import AIRBNB_AVAILABILITY_BRONZE_SCHEMA, AirbnbAvailabilityBronzeLayer
+from bookinz.storage.data_lake import DataLake
 
 __all__ = [
     "BookingBronzeLayer",
@@ -20,4 +21,5 @@ __all__ = [
     "AIRBNB_FACILITY_BRONZE_SCHEMA",
     "AirbnbAvailabilityBronzeLayer",
     "AIRBNB_AVAILABILITY_BRONZE_SCHEMA",
+    "DataLake",
 ]

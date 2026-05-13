@@ -130,7 +130,7 @@ class AirbnbFacilityBronzeLayer:
         if "\x00" in path_str or "'" in path_str:
             raise ValueError(f"base_path contains invalid characters: {base_path!r}")
         self.base_path   = base_path
-        self.bronze_root = self.base_path / "airbnb" / "bronze" / "facilities"
+        self.bronze_root = self.base_path / "bronze" / "airbnb" / "facility"
         self.bronze_root.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
@@ -191,21 +191,6 @@ class AirbnbFacilityBronzeLayer:
     # ------------------------------------------------------------------
     # Query helpers
     # ------------------------------------------------------------------
-
-    def query(self, sql: str) -> pd.DataFrame:
-        """Execute *sql* against the view ``airbnb_facility_bronze``.
-
-        Example
-        -------
-        >>> layer = AirbnbFacilityBronzeLayer("data")
-        >>> df = layer.query("SELECT facility_id, rating FROM airbnb_facility_bronze LIMIT 10")
-        """
-        glob_pattern = str(self.bronze_root / "**" / "*.parquet")
-        con = duckdb.connect()
-        con.execute(self._build_view_sql(glob_pattern))
-        result: pd.DataFrame = con.execute(sql).df()
-        con.close()
-        return result
 
     def connection(self) -> duckdb.DuckDBPyConnection:
         """Return an open DuckDB connection with ``airbnb_facility_bronze`` pre-registered.

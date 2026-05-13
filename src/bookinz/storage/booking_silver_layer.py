@@ -87,7 +87,7 @@ class BookingSilverLayer:
         if "\x00" in path_str or "'" in path_str:
             raise ValueError(f"base_path contains invalid characters: {base_path!r}")
         self.base_path = base_path
-        self.silver_root = self.base_path / "silver" / "accommodations"
+        self.silver_root = self.base_path / "silver" / "booking" / "accommodations"
         self.silver_root.mkdir(parents=True, exist_ok=True)
         self._bronze = BookingBronzeLayer(base_path)
 
@@ -138,36 +138,6 @@ class BookingSilverLayer:
     # ------------------------------------------------------------------
     # Query
     # ------------------------------------------------------------------
-
-    def query(self, sql: str) -> "pd.DataFrame":  # noqa: F821
-        """Execute *sql* against the latest silver Parquet file.
-
-        The table name ``silver`` is pre-registered.
-
-        Example
-        -------
-        >>> sl = SilverLayer("data")
-        >>> df = sl.query("SELECT * FROM silver WHERE city = 'Roma' LIMIT 10")
-        """
-        import pandas as pd  # local import to keep startup fast
-
-        parquet_files = sorted(self.silver_root.glob("silver_*.parquet"))
-        if not parquet_files:
-            raise FileNotFoundError(
-                f"No silver Parquet files found under {self.silver_root}. "
-                "Run SilverLayer.push() first."
-            )
-        # Use the most-recently written file
-        latest = parquet_files[-1]
-        glob_pattern = str(latest)
-
-        con = duckdb.connect()
-        con.execute(
-            f"CREATE VIEW booking_silver AS SELECT * FROM read_parquet('{glob_pattern}')"
-        )
-        result: pd.DataFrame = con.execute(sql).df()
-        con.close()
-        return result
 
 
 # ---------------------------------------------------------------------------

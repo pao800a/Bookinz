@@ -99,7 +99,11 @@ def _discover_listings(
         if facility_ids:
             ids_str = ", ".join(f"'{fid}'" for fid in facility_ids)
             sql += f" AND facility_id IN ({ids_str})"
-        df = abl.query(sql)
+        con = abl.connection()
+        try:
+            df = con.execute(sql).df()
+        finally:
+            con.close()
         listings = list(zip(df["facility_id"].astype(str), df["url"].astype(str)))
         logger.info("Discovered %d unique listing(s) from airbnb_bronze.", len(listings))
         return listings

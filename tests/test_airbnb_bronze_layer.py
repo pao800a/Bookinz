@@ -130,43 +130,19 @@ class TestBronzeWrite:
 
 
 # ---------------------------------------------------------------------------
-# Tests: DuckDB query
+# Tests: path structure
 # ---------------------------------------------------------------------------
 
-class TestBronzeQuery:
-    def test_query_returns_all_rows(self, bronze: AirbnbBronzeLayer) -> None:
-        bronze.write(AIRBNB_SAMPLE_RECORDS, "2026-09-01T10:00:00")
-        df = bronze.query("SELECT * FROM airbnb_bronze")
-        assert len(df) == len(AIRBNB_SAMPLE_RECORDS)
+class TestAirbnbBronzePath:
+    def test_bronze_root_uses_new_layout(self, bronze: AirbnbBronzeLayer) -> None:
+        assert bronze.bronze_root.parts[-3:] == ("bronze", "airbnb", "accommodations")
 
-    def test_view_alias_is_airbnb_bronze(self, bronze: AirbnbBronzeLayer) -> None:
-        """The DuckDB view must be named airbnb_bronze (not bronze)."""
-        bronze.write(AIRBNB_SAMPLE_RECORDS, "2026-09-01T10:00:00")
-        df = bronze.query("SELECT * FROM airbnb_bronze")
-        assert len(df) >= 1
 
-    def test_query_filter_by_search_area(self, bronze: AirbnbBronzeLayer) -> None:
-        bronze.write(AIRBNB_SAMPLE_RECORDS, "2026-09-01T10:00:00")
-        milan_records = [
-            {**r, "search_area": "Milan__Italy", "facility_id": f"m_{r['facility_id']}"}
-            for r in AIRBNB_SAMPLE_RECORDS
-        ]
-        bronze.write(milan_records, "2026-09-01T10:00:00")
+# ---------------------------------------------------------------------------
+# Tests: DuckDB connection
+# ---------------------------------------------------------------------------
 
-        df = bronze.query("SELECT * FROM airbnb_bronze WHERE search_area = 'Rome__Italy'")
-        assert len(df) == len(AIRBNB_SAMPLE_RECORDS)
-        assert set(df["search_area"].unique()) == {"Rome__Italy"}
-
-    def test_query_price_column_type(self, bronze: AirbnbBronzeLayer) -> None:
-        bronze.write(AIRBNB_SAMPLE_RECORDS, "2026-09-01T10:00:00")
-        df = bronze.query("SELECT total_price FROM airbnb_bronze WHERE total_price IS NOT NULL")
-        assert pd.api.types.is_float_dtype(df["total_price"])
-
-    def test_query_available_only(self, bronze: AirbnbBronzeLayer) -> None:
-        bronze.write(AIRBNB_SAMPLE_RECORDS, "2026-09-01T10:00:00")
-        df = bronze.query("SELECT * FROM airbnb_bronze WHERE is_available = true")
-        assert all(df["is_available"])
-
+class TestBronzeConnection:
     def test_connection_returns_open_connection(self, bronze: AirbnbBronzeLayer) -> None:
         bronze.write(AIRBNB_SAMPLE_RECORDS, "2026-09-01T10:00:00")
         con = bronze.connection()
@@ -202,8 +178,10 @@ class TestBronzeQuery:
         table_subset = pa.Table.from_pandas(df[list(record.keys())], schema=schema_subset, preserve_index=False)
         pq.write_table(table_subset, partition_dir / "run_old.parquet")
 
-        # Query must succeed and return NULL for latitude/longitude
-        df_out = bronze.query("SELECT latitude, longitude FROM airbnb_bronze")
+        # Connection must succeed and return NULL for latitude/longitude
+        con = bronze.connection()
+        df_out = con.execute("SELECT latitude, longitude FROM airbnb_bronze").df()
+        con.close()
         assert "latitude"  in df_out.columns
         assert "longitude" in df_out.columns
 
@@ -212,8 +190,10 @@ class TestBronzeQuery:
         day2 = [{**r, "scraped_at": "2026-09-02T10:00:00"} for r in AIRBNB_SAMPLE_RECORDS]
         bronze.write(day2, "2026-09-02T10:00:00")
 
-        df = bronze.query(
+        con = bronze.connection()
+        df = con.execute(
             "SELECT DISTINCT CAST(scrape_date AS VARCHAR) AS scrape_date "
             "FROM airbnb_bronze ORDER BY scrape_date"
-        )
+        ).df()
+        con.close()
         assert list(df["scrape_date"]) == ["2026-09-01", "2026-09-02"]

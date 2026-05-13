@@ -122,38 +122,19 @@ class TestBronzeWrite:
 
 
 # ---------------------------------------------------------------------------
-# Tests: DuckDB query
+# Tests: path structure
 # ---------------------------------------------------------------------------
 
-class TestBronzeQuery:
-    def test_query_returns_all_rows(self, bronze: BookingBronzeLayer) -> None:
-        bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
-        df = bronze.query("SELECT * FROM booking_bronze")
-        assert len(df) == len(SAMPLE_RECORDS)
+class TestBronzePath:
+    def test_bronze_root_uses_new_layout(self, bronze: BookingBronzeLayer) -> None:
+        assert bronze.bronze_root.parts[-3:] == ("bronze", "booking", "accommodations")
 
-    def test_query_filter_by_search_area(self, bronze: BookingBronzeLayer) -> None:
-        bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
-        # Write a second area
-        paris_records = [
-            {**r, "search_area": "Paris", "facility_id": f"p_{r['facility_id']}"}
-            for r in SAMPLE_RECORDS
-        ]
-        bronze.write(paris_records, "2024-01-15T08:00:00")
 
-        df = bronze.query("SELECT * FROM booking_bronze WHERE search_area = 'Amsterdam'")
-        assert len(df) == len(SAMPLE_RECORDS)
-        assert set(df["search_area"].unique()) == {"Amsterdam"}
+# ---------------------------------------------------------------------------
+# Tests: DuckDB connection
+# ---------------------------------------------------------------------------
 
-    def test_query_price_column_type(self, bronze: BookingBronzeLayer) -> None:
-        bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
-        df = bronze.query("SELECT total_price FROM booking_bronze WHERE total_price IS NOT NULL")
-        assert pd.api.types.is_float_dtype(df["total_price"])
-
-    def test_query_available_only(self, bronze: BookingBronzeLayer) -> None:
-        bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
-        df = bronze.query("SELECT * FROM booking_bronze WHERE is_available = true")
-        assert all(df["is_available"])
-
+class TestBronzeConnection:
     def test_connection_returns_open_connection(self, bronze: BookingBronzeLayer) -> None:
         bronze.write(SAMPLE_RECORDS, "2024-01-15T08:00:00")
         con = bronze.connection()
@@ -166,8 +147,10 @@ class TestBronzeQuery:
         day2 = [{**r, "scraped_at": "2024-01-16T08:00:00"} for r in SAMPLE_RECORDS]
         bronze.write(day2, "2024-01-16T08:00:00")
 
-        df = bronze.query(
+        con = bronze.connection()
+        df = con.execute(
             "SELECT DISTINCT CAST(scrape_date AS VARCHAR) AS scrape_date "
             "FROM booking_bronze ORDER BY scrape_date"
-        )
+        ).df()
+        con.close()
         assert list(df["scrape_date"]) == ["2024-01-15", "2024-01-16"]

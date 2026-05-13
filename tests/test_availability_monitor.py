@@ -120,7 +120,7 @@ class TestAvailabilityMonitor:
 
     def test_error_in_query_returns_empty_list(self, tmp_path: Path) -> None:
         bronze_mock = MagicMock(spec=BookingBronzeLayer)
-        bronze_mock.query.side_effect = RuntimeError("DB error")
+        bronze_mock.connection.side_effect = RuntimeError("DB error")
 
         monitor = AvailabilityMonitor(bronze_mock)
         alerts = monitor.check("Amsterdam", "2024-01-15T08:00:00")

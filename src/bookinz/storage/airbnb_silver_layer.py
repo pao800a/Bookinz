@@ -183,7 +183,7 @@ class AirbnbSilverLayer:
         if "\x00" in path_str or "'" in path_str:
             raise ValueError(f"base_path contains invalid characters: {base_path!r}")
         self.base_path   = base_path
-        self.silver_root = self.base_path / "airbnb" / "silver" / "accommodations"
+        self.silver_root = self.base_path / "silver" / "airbnb" / "accommodations"
         self.silver_root.mkdir(parents=True, exist_ok=True)
         self._bronze = AirbnbBronzeLayer(base_path)
 
@@ -235,31 +235,6 @@ class AirbnbSilverLayer:
     # ------------------------------------------------------------------
     # Query
     # ------------------------------------------------------------------
-
-    def query(self, sql: str) -> pd.DataFrame:
-        """Execute *sql* against the latest AirBnB silver Parquet (view: ``airbnb_silver``).
-
-        Example
-        -------
-        >>> sl = AirbnbSilverLayer("data")
-        >>> df = sl.query("SELECT * FROM airbnb_silver WHERE city = 'Tirana' LIMIT 5")
-        """
-        parquet_files = sorted(self.silver_root.glob("silver_*.parquet"))
-        if not parquet_files:
-            raise FileNotFoundError(
-                f"No AirBnB silver Parquet files found under {self.silver_root}. "
-                "Run AirbnbSilverLayer.push() first."
-            )
-        latest       = parquet_files[-1]
-        glob_pattern = str(latest)
-
-        con = duckdb.connect()
-        con.execute(
-            f"CREATE VIEW airbnb_silver AS SELECT * FROM read_parquet('{glob_pattern}')"
-        )
-        result: pd.DataFrame = con.execute(sql).df()
-        con.close()
-        return result
 
 
 # ---------------------------------------------------------------------------
